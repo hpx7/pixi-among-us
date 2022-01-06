@@ -1,4 +1,4 @@
-import { Application, Loader, Sprite } from "pixi.js";
+import { AnimatedSprite, Application, Loader, Sprite } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 
 const SPEED = 5;
@@ -6,7 +6,7 @@ const SPEED = 5;
 const app = new Application({ resizeTo: window });
 document.body.appendChild(app.view);
 
-const { backgroundSprite, characterSprite } = await loadSprites();
+const { backgroundSprite, idleSprite, walkingSprite } = await loadSprites();
 
 const viewport = new Viewport({
   screenWidth: app.view.width,
@@ -21,39 +21,48 @@ app.stage.addChild(viewport);
 
 viewport.addChild(backgroundSprite);
 
-characterSprite.anchor.set(0.5);
-characterSprite.setTransform(backgroundSprite.width / 2, backgroundSprite.height / 2);
-viewport.follow(characterSprite);
-viewport.addChild(characterSprite);
+walkingSprite.animationSpeed = 0.3;
+walkingSprite.play();
+walkingSprite.setTransform(backgroundSprite.width / 2, backgroundSprite.height / 2);
+viewport.follow(walkingSprite);
+viewport.addChild(walkingSprite);
 
-let target = { x: characterSprite.x, y: characterSprite.y };
+let target = { x: walkingSprite.x, y: walkingSprite.y };
 
 viewport.on("clicked", (e) => {
   target = { x: e.world.x, y: e.world.y };
 });
 
 app.ticker.add(() => {
-  const dx = target.x - characterSprite.x;
-  const dy = target.y - characterSprite.y;
+  const dx = target.x - walkingSprite.x;
+  const dy = target.y - walkingSprite.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
   if (dist <= SPEED) {
-    characterSprite.x = target.x;
-    characterSprite.y = target.y;
+    walkingSprite.x = target.x;
+    walkingSprite.y = target.y;
   } else {
-    characterSprite.x += (dx / dist) * SPEED;
-    characterSprite.y += (dy / dist) * SPEED;
+    walkingSprite.x += (dx / dist) * SPEED;
+    walkingSprite.y += (dy / dist) * SPEED;
+  }
+  if (dx > 0) {
+    walkingSprite.scale.x = 1;
+  } else if (dx < 0) {
+    walkingSprite.scale.x = -1;
   }
 });
 
-function loadSprites(): Promise<{ backgroundSprite: Sprite; characterSprite: Sprite }> {
-  const loader = new Loader();
-  loader.add("background", "The_Skeld_map.png").add("character", "idle.png");
+function loadSprites(): Promise<{ backgroundSprite: Sprite; idleSprite: Sprite; walkingSprite: AnimatedSprite }> {
   return new Promise((resolve) => {
-    loader.load((_, resources) => {
-      resolve({
-        backgroundSprite: new Sprite(resources.background.texture),
-        characterSprite: new Sprite(resources.character.texture),
+    new Loader()
+      .add("background", "The_Skeld_map.png")
+      .add("character", "idle.png")
+      .add("walk", "walk.json")
+      .load((_, resources) => {
+        resolve({
+          backgroundSprite: new Sprite(resources.background.texture),
+          idleSprite: new Sprite(resources.character.texture),
+          walkingSprite: new AnimatedSprite(resources.walk.spritesheet!.animations.walkcolor),
+        });
       });
-    });
   });
 }
