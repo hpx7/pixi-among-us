@@ -1,9 +1,9 @@
 # pixi-among-us
 
-Demo Hathora game
+Demo I made while playing around with Pixi.js
 
 https://chivalrous-popcorn.surge.sh/
 
-Click to move
+Instructions: click to move
 
 Collision detection (walls) not yet implemented
